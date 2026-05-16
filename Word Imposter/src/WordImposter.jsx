@@ -631,9 +631,10 @@ function WordRevealScreen({ players, onNext, onBack }) {
           {player.isImposterBlind ? (
             <div>
               <div className="vt" style={{ fontSize: 64, color: COLORS.textDim, letterSpacing: "0.05em", textShadow: "none" }}>???</div>
-              <div className="mono" style={{ fontSize: 11, color: COLORS.accentDim, marginTop: 8, lineHeight: 1.6 }}>
-                you are the imposter<br />
-                <span style={{ color: COLORS.textDim }}>you have no word — deceive them</span>
+              <div style={{ marginTop: 16 }}>
+                <div className="mono" style={{ fontSize: 11, color: COLORS.textMid, letterSpacing: "0.12em" }}>you are the</div>
+                <div className="vt" style={{ fontSize: 52, color: COLORS.accentBright, letterSpacing: "0.08em", lineHeight: 1, textShadow: `0 0 24px rgba(0,255,70,0.5)` }}>IMPOSTER</div>
+                <div className="mono" style={{ fontSize: 11, color: COLORS.textDim, marginTop: 8, letterSpacing: "0.08em" }}>you have no word — deceive them</div>
               </div>
             </div>
           ) : (
@@ -910,8 +911,9 @@ function FinalScreen({ players, mode, onPlayAgain, onHome }) {
 
 // ── Game Logic ────────────────────────────────────────────────────────────────
 function assignWords(names, mode, imposterCount) {
-  const shuffledNames = shuffle(names);
-  const imposterIndices = shuffledNames.slice(0, imposterCount).map((_, i) => i);
+  // Keep original name order — randomize only which positions become imposters
+  const shuffledIndices = shuffle(names.map((_, i) => i));
+  const imposterSet = new Set(shuffledIndices.slice(0, imposterCount));
 
   let civilianWord, imposterWord;
 
@@ -925,8 +927,8 @@ function assignWords(names, mode, imposterCount) {
     imposterWord = w2;
   }
 
-  return shuffledNames.map((name, i) => {
-    const isImposter = imposterIndices.includes(i);
+  return names.map((name, i) => {
+    const isImposter = imposterSet.has(i);
     return {
       name,
       isImposter: mode === "sneaky" && isImposter,
