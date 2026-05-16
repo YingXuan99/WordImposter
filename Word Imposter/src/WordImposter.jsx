@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import './WordImposter.css';
 
 const COLORS = {
   bg: "#030a03",
@@ -9,130 +10,117 @@ const COLORS = {
   accentCyan: "#00eeff",
   accentDim: "#00882e",
   textPrimary: "#a0e8a0",
-  textMid: "#4a8a4a",
-  textDim: "#1e4a1e",
-  textFaint: "#0d2a0d",
+  textMid: "#529a52",
+  textDim: "#3a7a3a",
+  textFaint: "#357135",
   border: "#0d2a0d",
   borderActive: "#00cc44",
 };
 
 const WORD_PAIRS = [
-  ["Apple", "Pear"], ["Dog", "Wolf"], ["Car", "Truck"], ["Beach", "Desert"],
-  ["Coffee", "Tea"], ["Guitar", "Violin"], ["Football", "Rugby"], ["Pizza", "Pasta"],
-  ["River", "Lake"], ["Jacket", "Coat"], ["Rain", "Snow"], ["Hospital", "Clinic"],
-  ["Shark", "Dolphin"], ["Throne", "Chair"], ["Castle", "Fortress"], ["Candle", "Torch"],
-  ["Whisper", "Murmur"], ["Sprint", "Jog"], ["Sword", "Knife"], ["Crown", "Tiara"],
+  // Actions
+  ["Run", "Walk"],
+  ["Eat", "Drink"],
+  ["Laugh", "Cry"],
+  ["Swim", "Run"],
+  ["Shout", "Laugh"],
+
+  // Animals
+  ["Cat", "Dog"],
+  ["Ant", "Mosquito"],
+  ["Monkey", "Cat"],
+  ["Fish", "Bird"],
+  ["Dog", "Monkey"],
+  ["Flower", "Tree"],
+  ["Gorilla", "Rhino"],
+
+  // Food & Drink
+  ["Noodle", "Rice"],
+  ["Coffee", "Tea"],
+  ["Cake", "Bread"],
+  ["Chicken", "Fish"],
+  ["Soup", "Curry"],
+  ["Salt", "Sugar"],
+  ["Milk", "Beer"],
+  ["Kaya", "Sauce"],
+
+  // Nature
+  ["Rain", "Sun"],
+  ["Wind", "Rain"],
+  ["Mud", "Grass"],
+  ["Cloud", "Leaf"],
+  ["Sun", "Cloud"],
+
+  // People
+  ["Boss", "Colleague"],
+  ["Doctor", "Nurse"],
+  ["Parent", "Boss"],
+
+  // Places
+  ["Hawker", "Restaurant"],
+  ["School", "Library"],
+  ["Park", "Beach"],
+  ["Temple", "Church"],
+  ["Office", "School"],
+  ["Club", "Gym"],
+
+  // SG Flavour
+  ["Kopitiam", "Mall"],
+  ["Grab", "Bus"],
+  ["Kopi", "Beer"],
+
+  // Things
+  ["Phone", "Watch"],
+  ["Bag", "Umbrella"],
+  ["Door", "Window"],
+  ["Chair", "Table"],
+  ["Tissue", "Bottle"],
+
+  // Transport
+  ["Bus", "Train"],
+  ["Car", "Bike"],
+  ["Grab", "Taxi"],
+  ["MRT", "Lorry"],
+  ["Van", "Car"],
 ];
 
 const BLIND_WORDS = [
-  "Lighthouse", "Avalanche", "Telescope", "Monsoon", "Cathedral",
-  "Submarine", "Volcano", "Labyrinth", "Hurricane", "Compass",
-  "Mirage", "Eclipse", "Glacier", "Phantom", "Horizon",
+  // Actions
+  "Run", "Walk", "Sleep", "Eat", "Drink",
+  "Swim", "Queue", "Fall", "Jump",
+  "Wait", "Pay", "Cry", "Laugh", "Shout",
+  // Food & Drink
+  "Noodle", "Rice", "Bread", "Cake", "Egg",
+  "Soup", "Fruit", "Sugar", "Salt", "Oil",
+  "Ice", "Milk", "Coffee", "Tea", "Beer",
+  "Kaya", "Satay", "Curry", "Mango", "Chicken",
+  "Pork", "Sauce", "Snack",
+  // Nature & Animals
+  "Cat", "Dog", "Bird", "Ant", "Fish",
+  "Pigeon", "Monkey", "Mosquito", "Flower", "Tree",
+  "Rain", "Sun", "Wind", "Cloud", "Mud",
+  "Leaf", "Grass", "Stone", "Gorilla",
+  // People & Work
+  "Boss", "Doctor", "Teacher", "Driver",
+  "Cook", "Cleaner", "Baby", "Parent", "Friend",
+  "Colleague", "DJ", "Nurse", "Soldier", "Intern",
+  "Uncle", "Auntie", "Ah Gong", "Neighbour", "Stranger",
+  // Places
+  "School", "Market", "Park", "Beach", "Mall",
+  "Office", "Hawker", "Carpark",
+  "Gym", "Library", "Temple", "Church", "Toilet",
+  "Club", "Kopitiam", "Stadium", "Airport", "Hotel",
+  // SG Life
+  "HDB", "Kopi", "NTUC", "NS", "Ah Beng",
+  // Everyday Things
+  "Phone", "Bag", "Chair", "Table",
+  "Door", "Window", "Fan", "Light",
+  "Bottle", "Tissue", "Umbrella", "Watch",
+  // Transport
+  "Bus", "Train", "Car", "Bike", "Taxi",
+  "Boat", "Lorry", "Van", "Grab", "MRT", "Road",
 ];
 
-// ── Fonts ────────────────────────────────────────────────────────────────────
-const FontLoader = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #030a03; }
-    :root {
-      --accent: #00cc44;
-      --accent-bright: #00ff46;
-      --accent-cyan: #00eeff;
-      --bg: #030a03;
-      --bg-card: #060f06;
-      --bg-deep: #020802;
-      --text-primary: #a0e8a0;
-      --text-mid: #4a8a4a;
-      --text-dim: #2a5a2a;
-      --text-faint: #1a3a1a;
-      --border: #0d2a0d;
-      --border-active: #00cc44;
-      --mono: 'Share Tech Mono', monospace;
-      --display: 'VT323', monospace;
-    }
-    .vt { font-family: var(--display); }
-    .mono { font-family: var(--mono); }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes fadeInFast { from{opacity:0} to{opacity:1} }
-    @keyframes scanPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
-    @keyframes glitch {
-      0%{transform:translateX(0)} 10%{transform:translateX(-2px)} 20%{transform:translateX(2px)}
-      30%{transform:translateX(-1px)} 40%{transform:translateX(1px)} 50%{transform:translateX(0)}
-      100%{transform:translateX(0)}
-    }
-    @keyframes decrypt {
-      0%{opacity:0.3} 25%{opacity:0.7} 50%{opacity:0.5} 75%{opacity:0.9} 100%{opacity:1}
-    }
-    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-    .screen-enter { animation: fadeIn 0.35s ease forwards; }
-    .glitch { animation: glitch 0.4s ease; }
-    .cursor {
-      display: inline-block; width: 10px; height: 16px;
-      background: var(--accent); vertical-align: middle;
-      animation: blink 1s step-end infinite; margin-left: 3px;
-    }
-    .scanlines {
-      position: absolute; inset: 0; pointer-events: none; z-index: 10; border-radius: 16px;
-      background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,70,0.012) 2px,rgba(0,255,70,0.012) 4px);
-    }
-    .btn-primary {
-      display: block; width: 100%; padding: 15px;
-      background: var(--accent); color: #000;
-      font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em;
-      border: none; border-radius: 8px; cursor: pointer;
-      text-transform: uppercase; transition: background 0.15s, transform 0.1s;
-    }
-    .btn-primary:hover { background: var(--accent-bright); }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-ghost {
-      display: block; width: 100%; padding: 13px;
-      background: transparent; color: var(--text-mid);
-      font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
-      border: 1px solid #1a3a1a; border-radius: 8px; cursor: pointer;
-      text-transform: uppercase; transition: border-color 0.15s, color 0.15s;
-    }
-    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-outline {
-      display: block; width: 100%; padding: 14px;
-      background: transparent; color: var(--accent);
-      font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
-      border: 1px solid var(--accent); border-radius: 8px; cursor: pointer;
-      text-transform: uppercase; transition: background 0.15s;
-    }
-    .btn-outline:hover { background: rgba(0,204,68,0.08); }
-    .corner { position: absolute; width: 12px; height: 12px; border-color: #1a4a1a; border-style: solid; }
-    .corner-tl { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
-    .corner-tr { top: 8px; right: 8px; border-width: 1px 1px 0 0; }
-    .corner-bl { bottom: 8px; left: 8px; border-width: 0 0 1px 1px; }
-    .corner-br { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
-    input[type=text], input[type=number] {
-      background: var(--bg-card); color: var(--text-primary);
-      border: 1px solid #1a3a1a; border-radius: 8px;
-      font-family: var(--mono); font-size: 14px;
-      padding: 12px 14px; width: 100%; outline: none;
-      transition: border-color 0.15s;
-    }
-    input[type=text]:focus, input[type=number]:focus { border-color: var(--accent); }
-    input[type=text]::placeholder { color: var(--text-faint); }
-    .tag {
-      font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em;
-      text-transform: uppercase; color: var(--text-faint);
-    }
-    .mode-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 16px 14px; cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .mode-card:hover { border-color: #1a5a1a; }
-    .mode-card.active { border-color: var(--accent); background: #060f06; }
-    .pip { width: 22px; height: 3px; background: #0d2a0d; border-radius: 2px; transition: background 0.3s; }
-    .pip.on { background: var(--accent); }
-  `}</style>
-);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function shuffle(arr) {
@@ -269,7 +257,7 @@ function HomeScreen({ onStart }) {
         <div style={{ background: COLORS.bgCard, borderLeft: `2px solid ${COLORS.accent}`, borderRadius: "0 8px 8px 0", padding: "14px 16px", marginTop: 14 }}>
           <div className="mono" style={{ fontSize: 10, color: COLORS.accent, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>&gt; {mode} // win conditions</div>
           <div className="mono" style={{ fontSize: 12, color: COLORS.textMid, lineHeight: 1.7, marginBottom: 8 }}>
-            <span style={{ color: COLORS.textPrimary }}>CIVILIANS</span> — {rules[mode].civilian}
+            <span style={{ color: COLORS.textPrimary }}>AGENTS</span> — {rules[mode].civilian}
           </div>
           <div className="mono" style={{ fontSize: 12, color: COLORS.textMid, lineHeight: 1.7 }}>
             <span style={{ color: COLORS.accent }}>IMPOSTER</span> — {rules[mode].imposter}
@@ -370,43 +358,231 @@ function RoomSetupScreen({ mode, onNext, onBack }) {
 // ── Screen 3: PLAYER NAMES ────────────────────────────────────────────────────
 function PlayerNamesScreen({ playerCount, onNext, onBack }) {
   const [names, setNames] = useState(Array(playerCount).fill(""));
-  const inputs = useRef([]);
+  const [current, setCurrent] = useState(0);
+  const [inputVal, setInputVal] = useState("");
+  const [nameError, setNameError] = useState("");
+  const submitted = useRef(false);
+  const inputRef = useRef(null);
+  const isLast = current === playerCount - 1;
 
-  const allFilled = names.every(n => n.trim().length > 0);
+  // Layout constants — scale with player count
+  const NAMED_GAP = 6;
+  const NAMED = Math.min(80, Math.floor((368 - (playerCount - 1) * NAMED_GAP) / playerCount));
+  const ICON = Math.max(NAMED + 14, 56);
+  const QUEUE_PEEK = Math.round(ICON * 0.36);
+  const NAME_H = Math.max(14, Math.round(NAMED * 0.28));
+  const QUEUE_TOP = NAME_H + NAMED + 16;
+  const CONTAINER_H = QUEUE_TOP + ICON + 6;
+
+  useEffect(() => { inputRef.current?.focus(); }, [current]);
+
+  const handleNext = () => {
+    const trimmed = inputVal.trim();
+    if (!trimmed || submitted.current) return;
+    const isDuplicate = names.slice(0, current).some(
+      n => n.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (isDuplicate) {
+      setNameError("name already taken");
+      return;
+    }
+    setNameError("");
+    const updated = [...names];
+    updated[current] = trimmed;
+    if (isLast) {
+      submitted.current = true;
+      setNames(updated);
+      setInputVal("");
+      setTimeout(() => onNext(updated), 480);
+    } else {
+      setNames(updated);
+      setCurrent(c => c + 1);
+      setInputVal("");
+    }
+  };
+
+  const handleBack = () => {
+    setNameError("");
+    if (current === 0) { onBack(); return; }
+    const updated = [...names];
+    updated[current - 1] = "";
+    setNames(updated);
+    setCurrent(c => c - 1);
+    setInputVal(names[current - 1] || "");
+  };
 
   return (
     <Shell screenKey="names">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 28, paddingBottom: 20, borderBottom: `1px solid ${COLORS.border}`, marginBottom: 24 }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: COLORS.textDim, fontFamily: "var(--mono)", fontSize: 12 }}>&lt; back</button>
+        <button onClick={handleBack} style={{ background: "none", border: "none", cursor: "pointer", color: COLORS.textDim, fontFamily: "var(--mono)", fontSize: 12 }}>&lt; back</button>
         <SysTag>agent_registration</SysTag>
       </div>
 
       <div className="vt" style={{ fontSize: 40, color: COLORS.accent, marginBottom: 6 }}>IDENTIFY</div>
       <SysTag color={COLORS.textDim}>register all agents before mission start</SysTag>
 
-      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
-        {names.map((n, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div className="vt" style={{ fontSize: 22, color: COLORS.textDim, minWidth: 28, textAlign: "right" }}>{String(i + 1).padStart(2, "0")}</div>
-            <input
-              ref={el => inputs.current[i] = el}
-              type="text"
-              placeholder={`Agent ${i + 1}`}
-              value={n}
-              onChange={e => setNames(ns => ns.map((v, j) => j === i ? e.target.value : v))}
-              onKeyDown={e => e.key === "Enter" && inputs.current[i + 1]?.focus()}
-              maxLength={16}
-            />
-          </div>
+      {/* Animated icon area — two rows: done (top) + queue (bottom) */}
+      <div style={{ position: "relative", height: CONTAINER_H, marginTop: 28, marginBottom: 20 }}>
+        {Array.from({ length: playerCount }).map((_, i) => {
+          const isNamed = i < current;
+          const isActive = i === current;
+          const queueDepth = i - current; // 0 = active, 1 = first behind, etc.
+
+          let top, left, width, height, rotateY, scaleVal, opacity, bg, border, iSize, iColor, zIdx;
+
+          if (isNamed) {
+            top = NAME_H;
+            left = i * (NAMED + NAMED_GAP);
+            width = NAMED;
+            height = NAMED;
+            rotateY = 0;
+            scaleVal = 1;
+            opacity = 1;
+            bg = COLORS.bgCard;
+            border = `1px solid #1a4a1a`;
+            iSize = Math.max(12, Math.round(NAMED * 0.44));
+            iColor = COLORS.accentDim;
+            zIdx = playerCount + 10;
+          } else {
+            top = QUEUE_TOP;
+            left = queueDepth * QUEUE_PEEK;
+            width = ICON;
+            height = ICON;
+            rotateY = isActive ? -28 : -45;
+            scaleVal = isActive ? 1 : Math.max(1 - queueDepth * 0.04, 0.80);
+            opacity = isActive ? 1 : Math.max(0.88 - queueDepth * 0.12, 0.38);
+            bg = isActive ? "rgba(0,204,68,0.07)" : COLORS.bgDeep;
+            border = `1px solid ${isActive ? COLORS.accent : "#1a3a1a"}`;
+            iSize = isActive ? Math.round(ICON * 0.48) : Math.max(Math.round(ICON * 0.40) - queueDepth * 2, 12);
+            iColor = isActive ? COLORS.accent : COLORS.textMid;
+            zIdx = playerCount - queueDepth;
+          }
+
+          return (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                top,
+                left,
+                width,
+                height,
+                zIndex: zIdx,
+                background: bg,
+                border,
+                borderRadius: 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transform: `perspective(280px) rotateY(${rotateY}deg) scale(${scaleVal})`,
+                opacity,
+                transition: [
+                  "top 0.45s cubic-bezier(0.4,0,0.2,1)",
+                  "left 0.45s cubic-bezier(0.4,0,0.2,1)",
+                  "transform 0.45s cubic-bezier(0.34,1.1,0.64,1)",
+                  "width 0.35s ease",
+                  "height 0.35s ease",
+                  "opacity 0.3s ease",
+                  "background 0.3s ease",
+                  "border-color 0.3s ease",
+                ].join(", "),
+              }}
+            >
+              <i
+                className="ti ti-user"
+                style={{
+                  fontSize: iSize,
+                  color: iColor,
+                  transition: "font-size 0.35s ease, color 0.3s ease",
+                  pointerEvents: "none",
+                }}
+              />
+              {isNamed && names[i] && (
+                <div
+                  className="mono"
+                  style={{
+                    position: "absolute",
+                    top: -NAME_H,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    fontSize: Math.max(8, Math.min(11, Math.round(NAMED * 0.22))),
+                    color: COLORS.textPrimary,
+                    whiteSpace: "nowrap",
+                    letterSpacing: "0.04em",
+                    maxWidth: NAMED + 10,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    textAlign: "center",
+                    animation: "fadeInFast 0.3s ease 0.32s both",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {names[i]}
+                </div>
+              )}
+              {isActive && (
+                <div style={{
+                  position: "absolute",
+                  bottom: 5,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: COLORS.accent,
+                  animation: "pulse 1.4s ease infinite",
+                  pointerEvents: "none",
+                }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Progress pips */}
+      <div style={{ display: "flex", gap: 5, marginBottom: 18 }}>
+        {Array.from({ length: playerCount }).map((_, i) => (
+          <div
+            key={i}
+            className="pip"
+            style={{
+              flex: 1,
+              background: i <= current ? COLORS.accent : "#0d2a0d",
+              opacity: i < current ? 0.45 : i === current ? 1 : 0.2,
+              transition: "all 0.3s ease",
+            }}
+          />
         ))}
       </div>
 
-      <div style={{ marginTop: 24 }}>
-        <button className="btn-primary" disabled={!allFilled} style={{ opacity: allFilled ? 1 : 0.4, cursor: allFilled ? "pointer" : "not-allowed" }}
-          onClick={() => allFilled && onNext(names.map(n => n.trim()))}>
-          &gt; Assign words
-        </button>
+      <div className="mono" style={{ fontSize: 11, color: COLORS.accent, letterSpacing: "0.1em", marginBottom: 10 }}>
+        &gt; agent {current + 1} of {playerCount}
       </div>
+
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder="Enter name..."
+        value={inputVal}
+        onChange={e => { setInputVal(e.target.value); if (nameError) setNameError(""); }}
+        onKeyDown={e => e.key === "Enter" && handleNext()}
+        maxLength={16}
+        style={{ marginBottom: nameError ? 6 : 14, borderColor: nameError ? "#cc4400" : undefined }}
+      />
+      {nameError && (
+        <div className="mono" style={{ fontSize: 11, color: "#cc4400", letterSpacing: "0.08em", marginBottom: 10, animation: "fadeInFast 0.2s ease" }}>
+          ✕ {nameError}
+        </div>
+      )}
+
+      <button
+        className="btn-primary"
+        disabled={!inputVal.trim()}
+        style={{ opacity: inputVal.trim() ? 1 : 0.4, cursor: inputVal.trim() ? "pointer" : "not-allowed" }}
+        onClick={handleNext}
+      >
+        {isLast ? "> receive your word" : "> next"}
+      </button>
     </Shell>
   );
 }
@@ -534,6 +710,83 @@ function PreRoundScreen({ players, imposterCount, onStart }) {
   );
 }
 
+// ── Suspicion Feed ────────────────────────────────────────────────────────────
+const SUSPICION_TEMPLATES = [
+  n => `I think ${n} is the imposter`,
+  n => `${n} is acting suspicious`,
+  n => `something's off about ${n}...`,
+  n => `don't trust ${n}`,
+  n => `${n}'s clues don't add up`,
+  n => `keep your eye on ${n}`,
+  n => `${n} is being too vague`,
+  n => `${n} knows more than they're letting on`,
+  n => `why is ${n} so quiet?`,
+  n => `${n} seemed nervous just now`,
+  n => `${n} is avoiding the question`,
+  n => `${n}'s story keeps changing`,
+  n => `I don't believe ${n}`,
+  n => `vote ${n} out`,
+  () => `behavioral anomaly detected`,
+  () => `cross-referencing testimony...`,
+  () => `inconsistency found in agent report`,
+  () => `trust no one`,
+  () => `the imposter is among you`,
+  () => `scanning for deception patterns`,
+];
+
+function pickSuspicionPhrase(players) {
+  const t = SUSPICION_TEMPLATES[Math.floor(Math.random() * SUSPICION_TEMPLATES.length)];
+  const p = players[Math.floor(Math.random() * players.length)];
+  return t(p.name);
+}
+
+function SuspicionText({ players }) {
+  const playersRef = useRef(players);
+  const [phrase, setPhrase] = useState(() => pickSuspicionPhrase(players));
+  const [chars, setChars] = useState(0);
+  const [phase, setPhase] = useState("typing");
+
+  useEffect(() => {
+    let t;
+    if (phase === "typing") {
+      if (chars < phrase.length) {
+        t = setTimeout(() => setChars(c => c + 1), 52);
+      } else {
+        t = setTimeout(() => setPhase("deleting"), 2600);
+      }
+    } else {
+      if (chars > 0) {
+        t = setTimeout(() => setChars(c => c - 1), 24);
+      } else {
+        t = setTimeout(() => {
+          setPhrase(pickSuspicionPhrase(playersRef.current));
+          setPhase("typing");
+        }, 550);
+      }
+    }
+    return () => clearTimeout(t);
+  }, [phase, chars, phrase]);
+
+  return (
+    <div style={{
+      background: COLORS.bgDeep,
+      borderLeft: `2px solid ${COLORS.accentDim}`,
+      borderRadius: "0 8px 8px 0",
+      padding: "12px 16px",
+      marginBottom: 20,
+      minHeight: 48,
+      display: "flex",
+      alignItems: "center",
+    }}>
+      <div className="mono" style={{ fontSize: 12, color: COLORS.textMid, lineHeight: 1.5 }}>
+        <span style={{ color: COLORS.accentDim, marginRight: 6 }}>&gt;</span>
+        {phrase.slice(0, chars)}
+        <span className="cursor" style={{ width: 7, height: 12, background: COLORS.accentDim }} />
+      </div>
+    </div>
+  );
+}
+
 // ── Screen 6: DISCUSSION ──────────────────────────────────────────────────────
 function DiscussionScreen({ players, imposterCount, onReveal }) {
   const timer = useTimer();
@@ -578,6 +831,8 @@ function DiscussionScreen({ players, imposterCount, onReveal }) {
           </div>
         </div>
 
+        <SuspicionText players={players} />
+
         <button className="btn-outline" onClick={() => { timer.stop(); onReveal(); }}>
           &gt; Reveal result
         </button>
@@ -589,13 +844,6 @@ function DiscussionScreen({ players, imposterCount, onReveal }) {
 // ── Screen 7: FINAL ───────────────────────────────────────────────────────────
 function FinalScreen({ players, mode, onPlayAgain, onHome }) {
   const [wordsRevealed, setWordsRevealed] = useState(false);
-  const [namesRevealed, setNamesRevealed] = useState(false);
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    const t = setTimeout(() => setStep(1), 300);
-    return () => clearTimeout(t);
-  }, []);
 
   const imposters = players.filter(p => p.isImposter || p.isImposterBlind);
   const civilians = players.filter(p => !p.isImposter && !p.isImposterBlind);
@@ -612,7 +860,7 @@ function FinalScreen({ players, mode, onPlayAgain, onHome }) {
           </div>
         </div>
 
-        <div style={{ opacity: step >= 1 ? 1 : 0, transition: "opacity 0.5s", marginBottom: 16 }}>
+        <div style={{ animation: "slideUp 0.4s ease", marginBottom: 16 }}>
           <div style={{ background: COLORS.bgDeep, border: `1px solid #1a4a1a`, borderRadius: 12, padding: "20px", position: "relative" }}>
             <div className="corner corner-tl" /><div className="corner corner-tr" />
             <div className="corner corner-bl" /><div className="corner corner-br" />
@@ -620,55 +868,46 @@ function FinalScreen({ players, mode, onPlayAgain, onHome }) {
             {imposters.map((p, i) => (
               <div key={i} style={{ marginBottom: i < imposters.length - 1 ? 8 : 0 }}>
                 <div className="vt" style={{ fontSize: 36, color: COLORS.accent, letterSpacing: "0.05em" }}>
-                  {namesRevealed ? <DecryptText text={p.name.toUpperCase()} duration={600} /> : "██████"}
+                  <DecryptText text={p.name.toUpperCase()} duration={800} />
                 </div>
               </div>
             ))}
-            {!namesRevealed && (
-              <button className="btn-outline" style={{ marginTop: 14 }} onClick={() => setNamesRevealed(true)}>
-                &gt; Unmask imposter{imposters.length > 1 ? "s" : ""}
+          </div>
+        </div>
+
+        <div style={{ animation: "slideUp 0.4s ease 0.15s both", marginBottom: 16 }}>
+          <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "20px", position: "relative" }}>
+            <div className="corner corner-tl" /><div className="corner corner-tr" />
+            <div className="corner corner-bl" /><div className="corner corner-br" />
+            <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 12 }}>// classified words</div>
+
+            {!wordsRevealed ? (
+              <button className="btn-ghost" style={{ color: COLORS.textMid, borderColor: "#1a3a1a" }} onClick={() => setWordsRevealed(true)}>
+                [ reveal words ]
               </button>
+            ) : (
+              <div style={{ animation: "fadeInFast 0.4s ease" }}>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ flex: 1, background: COLORS.bgDeep, border: `1px solid #1a3a1a`, borderRadius: 8, padding: "12px 14px" }}>
+                    <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.12em", marginBottom: 6 }}>AGENTS</div>
+                    <div className="vt" style={{ fontSize: 28, color: COLORS.textPrimary }}>{civilianWord?.toUpperCase() || "—"}</div>
+                  </div>
+                  <div style={{ flex: 1, background: COLORS.bgDeep, border: `1px solid #1a4a1a`, borderRadius: 8, padding: "12px 14px" }}>
+                    <div className="mono" style={{ fontSize: 10, color: COLORS.accentDim, letterSpacing: "0.12em", marginBottom: 6 }}>IMPOSTER</div>
+                    <div className="vt" style={{ fontSize: 28, color: COLORS.accent }}>
+                      {mode === "blind" ? "NONE" : imposterWord?.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {namesRevealed && (
-          <div style={{ animation: "slideUp 0.4s ease", marginBottom: 16 }}>
-            <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "20px", position: "relative" }}>
-              <div className="corner corner-tl" /><div className="corner corner-tr" />
-              <div className="corner corner-bl" /><div className="corner corner-br" />
-              <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 12 }}>// classified words</div>
-
-              {!wordsRevealed ? (
-                <button className="btn-ghost" style={{ color: COLORS.textMid, borderColor: "#1a3a1a" }} onClick={() => setWordsRevealed(true)}>
-                  [ reveal words ]
-                </button>
-              ) : (
-                <div style={{ animation: "fadeInFast 0.4s ease" }}>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <div style={{ flex: 1, background: COLORS.bgDeep, border: `1px solid #1a3a1a`, borderRadius: 8, padding: "12px 14px" }}>
-                      <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.12em", marginBottom: 6 }}>CIVILIANS</div>
-                      <div className="vt" style={{ fontSize: 28, color: COLORS.textPrimary }}>{civilianWord?.toUpperCase() || "—"}</div>
-                    </div>
-                    <div style={{ flex: 1, background: COLORS.bgDeep, border: `1px solid #1a4a1a`, borderRadius: 8, padding: "12px 14px" }}>
-                      <div className="mono" style={{ fontSize: 10, color: COLORS.accentDim, letterSpacing: "0.12em", marginBottom: 6 }}>IMPOSTER</div>
-                      <div className="vt" style={{ fontSize: 28, color: COLORS.accent }}>
-                        {mode === "blind" ? "NONE" : imposterWord?.toUpperCase()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {namesRevealed && (
-          <div style={{ animation: "slideUp 0.4s ease 0.2s both", display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
-            <button className="btn-primary" onClick={onPlayAgain}>&gt; Play again</button>
-            <button className="btn-ghost" onClick={onHome}>[ return to home ]</button>
-          </div>
-        )}
+        <div style={{ animation: "slideUp 0.4s ease 0.3s both", display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+          <button className="btn-primary" onClick={onPlayAgain}>&gt; Play again</button>
+          <button className="btn-ghost" onClick={onHome}>[ return to home ]</button>
+        </div>
       </div>
     </Shell>
   );
@@ -713,7 +952,6 @@ export default function App() {
 
   return (
     <>
-      <FontLoader />
       {screen === "home" && (
         <HomeScreen onStart={(mode) => { setGameMode(mode); go("setup"); }} />
       )}
