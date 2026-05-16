@@ -715,19 +715,18 @@ const SUSPICION_TEMPLATES = [
   n => `${n}'s clues don't add up`,
   n => `keep your eye on ${n}`,
   n => `${n} is being too vague`,
-  n => `${n} knows more than they're letting on`,
+  n => `are you sure thats the right word ${n}?`,
   n => `why is ${n} so quiet?`,
   n => `${n} seemed nervous just now`,
-  n => `${n} is avoiding the question`,
+  n => `${n} is taking too long`,
   n => `${n}'s story keeps changing`,
   n => `I don't believe ${n}`,
   n => `vote ${n} out`,
-  () => `behavioral anomaly detected`,
+  n => `why is ${n} sweating so much`,
   () => `cross-referencing testimony...`,
-  () => `inconsistency found in agent report`,
   () => `trust no one`,
-  () => `the imposter is among you`,
   () => `scanning for deception patterns`,
+  () => `something doesnt add up`,
 ];
 
 function pickSuspicionPhrase(players) {

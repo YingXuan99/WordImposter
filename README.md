@@ -1,4 +1,6 @@
 # Word Imposter
+![Homepage Preview](/Word Imposter/src/images/homepage.png)
+
 
 A social deduction party game for 3–10 players. One person is the imposter — they either have no word, or a slightly different one. Everyone gives clues. The group votes. Trust no one.
 
