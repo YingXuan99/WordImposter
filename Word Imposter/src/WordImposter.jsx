@@ -626,8 +626,8 @@ function WordRevealScreen({ players, onNext, onBack }) {
         <div style={{ background: COLORS.bgDeep, border: `1px solid #1a4a1a`, borderRadius: 12, padding: "36px 20px", textAlign: "center", marginTop: 20, position: "relative", animation: "fadeInFast 0.3s ease" }}>
           <div className="corner corner-tl" /><div className="corner corner-tr" />
           <div className="corner corner-bl" /><div className="corner corner-br" />
-          <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 8 }}>// classified — eyes only</div>
-          <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.15em", marginBottom: 16 }}>your assigned word</div>
+          <div className="mono" style={{ fontSize: 12, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 8 }}>// classified — eyes only</div>
+          <div className="mono" style={{ fontSize: 12, color: COLORS.textDim, letterSpacing: "0.15em", marginBottom: 16 }}>your assigned word</div>
           {player.isImposterBlind ? (
             <div>
               <div className="vt" style={{ fontSize: 64, color: COLORS.textDim, letterSpacing: "0.05em", textShadow: "none" }}>???</div>
@@ -644,7 +644,6 @@ function WordRevealScreen({ players, onNext, onBack }) {
               </div>
             </div>
           )}
-          <div className="mono" style={{ fontSize: 10, color: COLORS.textFaint, marginTop: 20, letterSpacing: "0.1em" }}>[ tap anywhere to redact ]</div>
         </div>
       )}
 
@@ -859,7 +858,7 @@ function FinalScreen({ players, mode, onPlayAgain, onHome }) {
           <div style={{ background: COLORS.bgDeep, border: `1px solid #1a4a1a`, borderRadius: 12, padding: "20px", position: "relative" }}>
             <div className="corner corner-tl" /><div className="corner corner-tr" />
             <div className="corner corner-bl" /><div className="corner corner-br" />
-            <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 12 }}>// imposter{imposters.length > 1 ? "s" : ""} unmasked</div>
+            <div className="mono" style={{ fontSize: 13, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 12 }}>// imposter{imposters.length > 1 ? "s" : ""} unmasked</div>
             {imposters.map((p, i) => (
               <div key={i} style={{ marginBottom: i < imposters.length - 1 ? 8 : 0 }}>
                 <div className="vt" style={{ fontSize: 36, color: COLORS.accent, letterSpacing: "0.05em" }}>
@@ -874,7 +873,7 @@ function FinalScreen({ players, mode, onPlayAgain, onHome }) {
           <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "20px", position: "relative" }}>
             <div className="corner corner-tl" /><div className="corner corner-tr" />
             <div className="corner corner-bl" /><div className="corner corner-br" />
-            <div className="mono" style={{ fontSize: 10, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 12 }}>// classified words</div>
+            <div className="mono" style={{ fontSize: 13, color: COLORS.textDim, letterSpacing: "0.2em", marginBottom: 12 }}>// classified words</div>
 
             {!wordsRevealed ? (
               <button className="btn-ghost" style={{ color: COLORS.textMid, borderColor: "#1a3a1a" }} onClick={() => setWordsRevealed(true)}>
