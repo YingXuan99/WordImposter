@@ -74,13 +74,12 @@ const WORD_PAIRS = [
   ["Bag", "Umbrella"],
   ["Door", "Window"],
   ["Chair", "Table"],
-  ["Tissue", "Bottle"],
+  ["Tissue", "Hawker"],
 
   // Transport
-  ["Bus", "Train"],
+  ["Bus", "MRT"],
   ["Car", "Bike"],
   ["Grab", "Taxi"],
-  ["MRT", "Lorry"],
   ["Van", "Car"],
 ];
 
@@ -595,6 +594,8 @@ function WordRevealScreen({ players, onNext, onBack }) {
   const player = players[current];
   const isLast = current === players.length - 1;
 
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [current]);
+
   const handleReveal = () => setRevealed(true);
   const handleNext = () => {
     if (isLast) { onNext(); return; }
@@ -640,12 +641,6 @@ function WordRevealScreen({ players, onNext, onBack }) {
               <div className="vt" style={{ fontSize: 64, color: COLORS.accent, letterSpacing: "0.05em", textShadow: `0 0 30px rgba(0,204,68,0.3)` }}>
                 <DecryptText text={player.word.toUpperCase()} />
               </div>
-              {player.isImposter && (
-                <div className="mono" style={{ fontSize: 11, color: COLORS.accentDim, marginTop: 10, lineHeight: 1.6 }}>
-                  you are the imposter<br />
-                  <span style={{ color: COLORS.textDim }}>there {players.filter(p => p.isImposter).length > 1 ? `is 1 other imposter` : "are no other imposters"}</span>
-                </div>
-              )}
             </div>
           )}
           <div className="mono" style={{ fontSize: 10, color: COLORS.textFaint, marginTop: 20, letterSpacing: "0.1em" }}>[ tap anywhere to redact ]</div>
@@ -752,7 +747,7 @@ function SuspicionText({ players }) {
       if (chars < phrase.length) {
         t = setTimeout(() => setChars(c => c + 1), 52);
       } else {
-        t = setTimeout(() => setPhase("deleting"), 2600);
+        t = setTimeout(() => setPhase("deleting"), 7000 + Math.floor(Math.random() * 8000));
       }
     } else {
       if (chars > 0) {
