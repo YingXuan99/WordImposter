@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import './WordImposter.css';
+import { WORD_CATEGORIES } from "./data/wordCategories.js";
+import { createWordHistory, pickSneakyWordPair } from "./lib/wordSelection.js";
 
 const COLORS = {
   bg: "#030a03",
@@ -17,108 +19,9 @@ const COLORS = {
   borderActive: "#00cc44",
 };
 
-const WORD_PAIRS = [
-  // Actions
-  ["Run", "Walk"],
-  ["Eat", "Drink"],
-  ["Laugh", "Cry"],
-  ["Swim", "Run"],
-  ["Shout", "Laugh"],
-
-  // Animals
-  ["Cat", "Dog"],
-  ["Ant", "Mosquito"],
-  ["Monkey", "Cat"],
-  ["Fish", "Bird"],
-  ["Dog", "Monkey"],
-  ["Flower", "Tree"],
-  ["Gorilla", "Rhino"],
-
-  // Food & Drink
-  ["Noodle", "Rice"],
-  ["Coffee", "Tea"],
-  ["Cake", "Bread"],
-  ["Chicken", "Fish"],
-  ["Soup", "Curry"],
-  ["Salt", "Sugar"],
-  ["Milk", "Beer"],
-  ["Kaya", "Sauce"],
-
-  // Nature
-  ["Rain", "Sun"],
-  ["Wind", "Rain"],
-  ["Mud", "Grass"],
-  ["Cloud", "Leaf"],
-  ["Sun", "Cloud"],
-
-  // People
-  ["Boss", "Colleague"],
-  ["Doctor", "Nurse"],
-  ["Parent", "Boss"],
-
-  // Places
-  ["Hawker", "Restaurant"],
-  ["School", "Library"],
-  ["Park", "Beach"],
-  ["Temple", "Church"],
-  ["Office", "School"],
-  ["Club", "Gym"],
-
-  // SG Flavour
-  ["Kopitiam", "Mall"],
-  ["Grab", "Bus"],
-  ["Kopi", "Beer"],
-
-  // Things
-  ["Phone", "Watch"],
-  ["Bag", "Umbrella"],
-  ["Door", "Window"],
-  ["Chair", "Table"],
-  ["Tissue", "Hawker"],
-
-  // Transport
-  ["Bus", "MRT"],
-  ["Car", "Bike"],
-  ["Grab", "Taxi"],
-  ["Van", "Car"],
-];
-
-const BLIND_WORDS = [
-  // Actions
-  "Run", "Walk", "Sleep", "Eat", "Drink",
-  "Swim", "Queue", "Fall", "Jump",
-  "Wait", "Pay", "Cry", "Laugh", "Shout",
-  // Food & Drink
-  "Noodle", "Rice", "Bread", "Cake", "Egg",
-  "Soup", "Fruit", "Sugar", "Salt", "Oil",
-  "Ice", "Milk", "Coffee", "Tea", "Beer",
-  "Kaya", "Satay", "Curry", "Mango", "Chicken",
-  "Pork", "Sauce", "Snack",
-  // Nature & Animals
-  "Cat", "Dog", "Bird", "Ant", "Fish",
-  "Pigeon", "Monkey", "Mosquito", "Flower", "Tree",
-  "Rain", "Sun", "Wind", "Cloud", "Mud",
-  "Leaf", "Grass", "Stone", "Gorilla",
-  // People & Work
-  "Boss", "Doctor", "Teacher", "Driver",
-  "Cook", "Cleaner", "Baby", "Parent", "Friend",
-  "Colleague", "DJ", "Nurse", "Soldier", "Intern",
-  "Uncle", "Auntie", "Ah Gong", "Neighbour", "Stranger",
-  // Places
-  "School", "Market", "Park", "Beach", "Mall",
-  "Office", "Hawker", "Carpark",
-  "Gym", "Library", "Temple", "Church", "Toilet",
-  "Club", "Kopitiam", "Stadium", "Airport", "Hotel",
-  // SG Life
-  "HDB", "Kopi", "NTUC", "NS", "Ah Beng",
-  // Everyday Things
-  "Phone", "Bag", "Chair", "Table",
-  "Door", "Window", "Fan", "Light",
-  "Bottle", "Tissue", "Umbrella", "Watch",
-  // Transport
-  "Bus", "Train", "Car", "Bike", "Taxi",
-  "Boat", "Lorry", "Van", "Grab", "MRT", "Road",
-];
+// Blind mode reuses the same categorized word bank as sneaky mode (flattened),
+// so there's a single source of truth for word content — see src/data/wordCategories.js.
+const BLIND_WORDS = Object.values(WORD_CATEGORIES).flat();
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -289,9 +192,12 @@ function HomeScreen({ onStart }) {
 // ── Screen 2: ROOM SETUP ──────────────────────────────────────────────────────
 function RoomSetupScreen({ mode, onNext, onBack }) {
   const [playerCount, setPlayerCount] = useState(5);
-  const [multiImposter, setMultiImposter] = useState(false);
+  const [imposterCount, setImposterCount] = useState(1);
 
-  const imposterCount = multiImposter && playerCount >= 6 ? 2 : 1;
+  // Imposters must always be a minority — max grows by 1 every 2 agents
+  // (3-4 agents -> 1, 5-6 -> 2, 7-8 -> 3, ...).
+  const maxImposters = Math.max(1, Math.floor((playerCount - 1) / 2));
+  const clampedImposterCount = Math.min(imposterCount, maxImposters);
 
   return (
     <Shell screenKey="setup">
@@ -320,34 +226,25 @@ function RoomSetupScreen({ mode, onNext, onBack }) {
         </Section>
 
         <Section label="imposter_count">
-          <div style={{ background: COLORS.bgCard, border: `1px solid ${playerCount < 6 ? COLORS.border : COLORS.borderActive}`, borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", opacity: playerCount < 6 ? 0.4 : 1 }}>
-            <div>
-              <div className="mono" style={{ fontSize: 13, color: COLORS.textPrimary, marginBottom: 3 }}>Multi-imposter</div>
-              <div className="mono" style={{ fontSize: 11, color: COLORS.textMid }}>2 imposters — requires 6+ agents</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button onClick={() => setImposterCount(Math.max(1, clampedImposterCount - 1))}
+              disabled={clampedImposterCount <= 1}
+              style={{ width: 44, height: 44, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 8, color: COLORS.textMid, fontSize: 20, cursor: clampedImposterCount <= 1 ? "not-allowed" : "pointer", fontFamily: "var(--mono)", opacity: clampedImposterCount <= 1 ? 0.4 : 1 }}>−</button>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div className="vt" style={{ fontSize: 52, color: COLORS.accent, lineHeight: 1 }}>{clampedImposterCount}</div>
+              <SysTag>imposters</SysTag>
             </div>
-            <div onClick={() => playerCount >= 6 && setMultiImposter(m => !m)}
-              style={{ width: 44, height: 24, background: multiImposter && playerCount >= 6 ? COLORS.accent : COLORS.bgDeep, border: `1px solid ${multiImposter && playerCount >= 6 ? COLORS.accent : COLORS.border}`, borderRadius: 12, cursor: playerCount >= 6 ? "pointer" : "not-allowed", position: "relative", transition: "all 0.2s" }}>
-              <div style={{ position: "absolute", top: 3, left: multiImposter && playerCount >= 6 ? 22 : 3, width: 16, height: 16, background: multiImposter && playerCount >= 6 ? "#000" : COLORS.textDim, borderRadius: "50%", transition: "left 0.2s" }} />
-            </div>
+            <button onClick={() => setImposterCount(Math.min(maxImposters, clampedImposterCount + 1))}
+              disabled={clampedImposterCount >= maxImposters}
+              style={{ width: 44, height: 44, background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 8, color: COLORS.textMid, fontSize: 20, cursor: clampedImposterCount >= maxImposters ? "not-allowed" : "pointer", fontFamily: "var(--mono)", opacity: clampedImposterCount >= maxImposters ? 0.4 : 1 }}>+</button>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-            {[
-              { icon: "ti-users", label: "Agents", val: playerCount, color: COLORS.textMid },
-              { icon: "ti-user-question", label: "Imposters", val: imposterCount, color: COLORS.accent },
-            ].map(s => (
-              <div key={s.label} style={{ background: COLORS.bgCard, border: `1px solid ${s.color === COLORS.accent ? "#1a4a1a" : COLORS.border}`, borderRadius: 8, padding: "12px 14px" }}>
-                <div className="mono" style={{ fontSize: 10, color: s.color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
-                  <i className={`ti ${s.icon}`} style={{ marginRight: 4, fontSize: 12 }} />{s.label}
-                </div>
-                <div className="vt" style={{ fontSize: 34, color: s.color }}>{s.val}</div>
-              </div>
-            ))}
+          <div className="mono" style={{ fontSize: 11, color: COLORS.textDim, marginTop: 10, textAlign: "center", letterSpacing: "0.05em" }}>
+            max {maxImposters} for {playerCount} agents
           </div>
         </Section>
       </div>
 
-      <button className="btn-primary" style={{ marginTop: 8 }} onClick={() => onNext({ playerCount, imposterCount })}>
+      <button className="btn-primary" style={{ marginTop: 8 }} onClick={() => onNext({ playerCount, imposterCount: clampedImposterCount })}>
         &gt; Enter agent names
       </button>
     </Shell>
@@ -836,13 +733,14 @@ function DiscussionScreen({ players, imposterCount, onReveal }) {
 }
 
 // ── Screen 7: FINAL ───────────────────────────────────────────────────────────
-function FinalScreen({ players, mode, onPlayAgain, onHome }) {
+function FinalScreen({ players, mode, onPlaySameMode, onChangeMode, onHome }) {
   const [wordsRevealed, setWordsRevealed] = useState(false);
 
   const imposters = players.filter(p => p.isImposter || p.isImposterBlind);
   const civilians = players.filter(p => !p.isImposter && !p.isImposterBlind);
   const imposterWord = imposters[0]?.word || "???";
   const civilianWord = civilians[0]?.word;
+  const otherMode = mode === "sneaky" ? "blind" : "sneaky";
 
   return (
     <Shell screenKey="final">
@@ -899,7 +797,8 @@ function FinalScreen({ players, mode, onPlayAgain, onHome }) {
         </div>
 
         <div style={{ animation: "slideUp 0.4s ease 0.3s both", display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
-          <button className="btn-primary" onClick={onPlayAgain}>&gt; Play again</button>
+          <button className="btn-primary" onClick={onPlaySameMode}>&gt; Play {mode.toUpperCase()} mode again</button>
+          <button className="btn-outline" onClick={onChangeMode}>&gt; Change to {otherMode.toUpperCase()} mode</button>
           <button className="btn-ghost" onClick={onHome}>[ return to home ]</button>
         </div>
       </div>
@@ -908,7 +807,7 @@ function FinalScreen({ players, mode, onPlayAgain, onHome }) {
 }
 
 // ── Game Logic ────────────────────────────────────────────────────────────────
-function assignWords(names, mode, imposterCount) {
+function assignWords(names, mode, imposterCount, wordHistory) {
   // Keep original name order — randomize only which positions become imposters
   const shuffledIndices = shuffle(names.map((_, i) => i));
   const imposterSet = new Set(shuffledIndices.slice(0, imposterCount));
@@ -919,10 +818,9 @@ function assignWords(names, mode, imposterCount) {
     civilianWord = BLIND_WORDS[Math.floor(Math.random() * BLIND_WORDS.length)];
     imposterWord = null;
   } else {
-    const pair = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
-    const [w1, w2] = Math.random() > 0.5 ? pair : [pair[1], pair[0]];
-    civilianWord = w1;
-    imposterWord = w2;
+    const pair = pickSneakyWordPair(wordHistory);
+    civilianWord = pair.civilianWord;
+    imposterWord = pair.imposterWord;
   }
 
   return names.map((name, i) => {
@@ -942,8 +840,20 @@ export default function App() {
   const [gameMode, setGameMode] = useState("blind");
   const [config, setConfig] = useState(null);
   const [players, setPlayers] = useState([]);
+  // Tracks recently-used words so sneaky mode avoids repeats. In-memory
+  // only — survives "Play again" (App never unmounts) but resets on page reload.
+  const wordHistoryRef = useRef(createWordHistory(Object.values(WORD_CATEGORIES).flat()));
 
   const go = (s) => setScreen(s);
+
+  // Reuses the current team (players.map(p => p.name)) — used by the "play
+  // again" / "change mode" replay flow to skip straight back to reveal
+  // without re-entering names.
+  const startRound = (mode, imposterCount) => {
+    const assigned = assignWords(players.map(p => p.name), mode, imposterCount, wordHistoryRef.current);
+    setPlayers(assigned);
+    go("reveal");
+  };
 
   return (
     <>
@@ -957,7 +867,7 @@ export default function App() {
       {screen === "names" && config && (
         <PlayerNamesScreen playerCount={config.playerCount} onBack={() => go("setup")}
           onNext={(names) => {
-            const assigned = assignWords(names, gameMode, config.imposterCount);
+            const assigned = assignWords(names, gameMode, config.imposterCount, wordHistoryRef.current);
             setPlayers(assigned);
             go("reveal");
           }} />
@@ -973,7 +883,12 @@ export default function App() {
       )}
       {screen === "final" && (
         <FinalScreen players={players} mode={gameMode}
-          onPlayAgain={() => { setConfig(null); setPlayers([]); go("setup"); }}
+          onPlaySameMode={() => startRound(gameMode, config.imposterCount)}
+          onChangeMode={() => {
+            const newMode = gameMode === "sneaky" ? "blind" : "sneaky";
+            setGameMode(newMode);
+            startRound(newMode, config.imposterCount);
+          }}
           onHome={() => { setConfig(null); setPlayers([]); go("home"); }} />
       )}
     </>
